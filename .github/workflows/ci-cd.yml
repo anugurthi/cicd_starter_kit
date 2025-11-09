@@ -3,9 +3,9 @@ name: CI/CD Pipeline
 # This pipeline runs on push and pull requests
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master, main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ master, main ]
 
 jobs:
   # Job 1: Lint and Code Quality
