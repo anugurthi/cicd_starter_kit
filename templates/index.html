@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CI/CD Starter Kit - Task Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button.delete {
+            background: #ef4444;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        button.delete:hover {
+            background: #dc2626;
+        }
+
+        .tasks-list {
+            list-style: none;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: transform 0.2s;
+        }
+
+        .task-item:hover {
+            transform: translateX(5px);
+        }
+
+        .task-item.completed {
+            opacity: 0.6;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+
+        .task-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state img {
+            width: 100px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .api-info {
+            background: #f0f9ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .api-info h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .api-info code {
+            background: #e5e7eb;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 CI/CD Starter Kit</h1>
+            <p>Task Manager with Live API</p>
+            <span class="status-badge">✓ Server Running</span>
+        </div>
+
+        <div class="card">
+            <h2>Add New Task</h2>
+            <div class="input-group">
+                <input type="text" id="taskInput" placeholder="What needs to be done?" />
+                <button onclick="addTask()">Add Task</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Your Tasks</h2>
+            <ul class="tasks-list" id="tasksList">
+                <div class="loading">Loading tasks...</div>
+            </ul>
+        </div>
+
+        <div class="card">
+            <div class="api-info">
+                <h3>🎓 Learning Mode</h3>
+                <p>This UI is connected to your REST API! Every action you take calls an API endpoint:</p>
+                <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                    <li><strong>Add Task:</strong> <code>POST /tasks</code></li>
+                    <li><strong>Toggle Complete:</strong> <code>PUT /tasks/:id</code></li>
+                    <li><strong>Delete Task:</strong> <code>DELETE /tasks/:id</code></li>
+                    <li><strong>Load Tasks:</strong> <code>GET /tasks</code></li>
+                </ul>
+                <p style="margin-top: 10px;">
+                    Open browser DevTools (F12) → Network tab to see API calls in action!
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Built with Flask • Part of your CI/CD learning journey 🎓</p>
+            <p><a href="/api">View API Documentation</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Load tasks when page loads
+        window.onload = function() {
+            loadTasks();
+        };
+
+        // Load all tasks from API
+        function loadTasks() {
+            fetch('/tasks')
+                .then(response => response.json())
+                .then(data => {
+                    const tasksList = document.getElementById('tasksList');
+                    
+                    if (data.tasks.length === 0) {
+                        tasksList.innerHTML = `
+                            <div class="empty-state">
+                                <div style="font-size: 4em;">📝</div>
+                                <p>No tasks yet. Add your first task above!</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    tasksList.innerHTML = data.tasks.map(task => `
+                        <li class="task-item ${task.completed ? 'completed' : ''}">
+                            <input type="checkbox" 
+                                   class="task-checkbox" 
+                                   ${task.completed ? 'checked' : ''} 
+                                   onchange="toggleTask(${task.id}, ${!task.completed})" />
+                            <span class="task-text">${task.title}</span>
+                            <button class="delete" onclick="deleteTask(${task.id})">Delete</button>
+                        </li>
+                    `).join('');
+                })
+                .catch(error => {
+                    console.error('Error loading tasks:', error);
+                    document.getElementById('tasksList').innerHTML = `
+                        <div class="empty-state" style="color: #ef4444;">
+                            <p>Error loading tasks. Is the API running?</p>
+                        </div>
+                    `;
+                });
+        }
+
+        // Add new task
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const title = input.value.trim();
+
+            if (!title) {
+                alert('Please enter a task!');
+                return;
+            }
+
+            fetch('/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title: title, completed: false })
+            })
+            .then(response => response.json())
+            .then(data => {
+                input.value = '';
+                loadTasks();
+            })
+            .catch(error => {
+                console.error('Error adding task:', error);
+                alert('Failed to add task');
+            });
+        }
+
+        // Toggle task completion
+        function toggleTask(id, completed) {
+            fetch(`/tasks/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ completed: completed })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadTasks();
+            })
+            .catch(error => {
+                console.error('Error toggling task:', error);
+                alert('Failed to update task');
+            });
+        }
+
+        // Delete task
+        function deleteTask(id) {
+            if (!confirm('Are you sure you want to delete this task?')) {
+                return;
+            }
+
+            fetch(`/tasks/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadTasks();
+            })
+            .catch(error => {
+                console.error('Error deleting task:', error);
+                alert('Failed to delete task');
+            });
+        }
+
+        // Allow Enter key to add task
+        document.getElementById('taskInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTask();
+            }
+        });
+    </script>
+</body>
+</html>
