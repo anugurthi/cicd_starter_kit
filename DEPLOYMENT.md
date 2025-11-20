@@ -5,11 +5,13 @@ Complete guide for deploying your CI/CD Starter Kit to various platforms.
 ---
 
 ## Table of Contents
-1. [Heroku Deployment](#heroku-deployment)
-2. [Docker Deployment](#docker-deployment)
-3. [AWS Deployment](#aws-deployment)
-4. [Azure Deployment](#azure-deployment)
-5. [Google Cloud Deployment](#google-cloud-deployment)
+1. [Heroku Deployment](#1-heroku-deployment-easiest)
+2. [Docker Deployment](#2-docker-deployment)
+3. [AWS Deployment](#3-aws-deployment)
+4. [Azure Deployment](#4-azure-deployment)
+5. [Google Cloud Deployment](#5-google-cloud-deployment)
+6. [Environment Variables](#environment-variables)
+7. [Security Best Practices](#security-best-practices)
 
 ---
 
@@ -19,9 +21,7 @@ Complete guide for deploying your CI/CD Starter Kit to various platforms.
 - Heroku account (free tier available)
 - Heroku CLI installed
 
-### Steps
-
-**Option A: Using Heroku CLI**
+### Quick Deploy
 
 ```bash
 # Login to Heroku
@@ -40,7 +40,7 @@ heroku open
 heroku logs --tail
 ```
 
-**Option B: Using GitHub Actions (Automated)**
+### Automated Deployment with GitHub Actions
 
 1. Get your Heroku API key:
 ```bash
@@ -57,38 +57,27 @@ heroku auth:token
 
 4. Push to GitHub - auto-deployment activated! 🎉
 
-### Heroku Commands
+### Useful Heroku Commands
 
 ```bash
-# Scale dynos
-heroku ps:scale web=1
-
-# Run commands
-heroku run python
-
-# Database (if added)
-heroku addons:create heroku-postgresql:hobby-dev
-
-# Custom domain
-heroku domains:add www.yourdomain.com
+heroku ps:scale web=1                  # Scale dynos
+heroku run python                      # Run commands
+heroku addons:create heroku-postgresql:hobby-dev  # Add database
+heroku domains:add www.yourdomain.com  # Custom domain
 ```
 
 ### Troubleshooting Heroku
 
-**Issue: Application Error**
+**Application Error:**
 ```bash
-heroku logs --tail
-# Check if port is correctly set
-# Ensure Procfile exists
+heroku logs --tail  # Check logs
+# Ensure Procfile exists and port is correctly set
 ```
 
-**Issue: Build Failed**
+**Build Failed:**
 ```bash
-# Check Python version
 cat runtime.txt  # Should be: python-3.9.x
-
-# Verify requirements.txt
-heroku run pip list
+heroku run pip list  # Verify requirements.txt
 ```
 
 ---
@@ -97,7 +86,6 @@ heroku run pip list
 
 ### Local Docker Setup
 
-**Build and run:**
 ```bash
 # Build image
 docker build -t cicd-starter-app .
@@ -116,16 +104,12 @@ docker stop my-app
 docker rm my-app
 ```
 
-**Using Docker Compose:**
+### Using Docker Compose
+
 ```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+docker-compose up -d        # Start all services
+docker-compose logs -f      # View logs
+docker-compose down         # Stop services
 ```
 
 ### Deploy to Docker Hub
@@ -168,7 +152,6 @@ docker run -d -p 80:5000 --restart=always yourusername/cicd-starter-app
 
 ### Option A: AWS Elastic Beanstalk
 
-**Setup:**
 ```bash
 # Install EB CLI
 pip install awsebcli
@@ -185,9 +168,6 @@ eb deploy
 # Open application
 eb open
 
-# Check status
-eb status
-
 # View logs
 eb logs
 ```
@@ -203,41 +183,172 @@ option_settings:
 
 ### Option B: AWS ECS (Docker)
 
-**Steps:**
-1. Push image to ECR (Elastic Container Registry)
+#### Prerequisites
+- AWS Account
+- AWS CLI configured
+- Docker image pushed to ECR or Docker Hub
+
+#### 1. Create ECR Repository
+```bash
+aws ecr create-repository \
+  --repository-name cicd-starter-app \
+  --region us-east-1
+```
+
+#### 2. Push Image to ECR
 ```bash
 # Login to ECR
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com
-
-# Create repository
-aws ecr create-repository --repository-name cicd-starter-app
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin \
+  YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com
 
 # Tag and push
-docker tag cicd-starter-app:latest YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/cicd-starter-app:latest
+docker tag cicd-starter-app:latest \
+  YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/cicd-starter-app:latest
 docker push YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/cicd-starter-app:latest
 ```
 
-2. Create ECS cluster and service via AWS Console
-
-### Option C: AWS Lambda (Serverless)
-
-**Using Zappa:**
+#### 3. Create ECS Cluster
 ```bash
-# Install Zappa
-pip install zappa
-
-# Initialize
-zappa init
-
-# Deploy
-zappa deploy production
-
-# Update
-zappa update production
-
-# Undeploy
-zappa undeploy production
+aws ecs create-cluster \
+  --cluster-name cicd-cluster \
+  --region us-east-1
 ```
+
+#### 4. Create Task Definition
+
+Create `ecs-task-definition.json`:
+
+```json
+{
+  "family": "cicd-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::YOUR_ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "cicd-app",
+      "image": "YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/cicd-starter-app:latest",
+      "portMappings": [
+        {
+          "containerPort": 5000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cicd-task",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
+```
+
+Register task definition:
+```bash
+aws ecs register-task-definition \
+  --cli-input-json file://ecs-task-definition.json
+```
+
+#### 5. Create ECS Service
+```bash
+aws ecs create-service \
+  --cluster cicd-cluster \
+  --service-name cicd-service \
+  --task-definition cicd-task \
+  --desired-count 2 \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-xxx,subnet-yyy],securityGroups=[sg-xxx],assignPublicIp=ENABLED}" \
+  --region us-east-1
+```
+
+#### Required AWS Resources
+
+**VPC & Networking:**
+- VPC with CIDR block (e.g., 10.0.0.0/16)
+- 2+ Public subnets in different AZs
+- Internet Gateway attached to VPC
+- Route tables configured
+
+**Security Groups:**
+- Allow inbound HTTP (80) from 0.0.0.0/0
+- Allow inbound on port 5000 for ECS tasks
+- Allow outbound to 0.0.0.0/0
+
+**IAM Role for ECS Task Execution:**
+- Attach `AmazonECSTaskExecutionRolePolicy`
+- Attach `CloudWatchLogsFullAccess`
+
+**CloudWatch Log Group:**
+```bash
+aws logs create-log-group \
+  --log-group-name /ecs/cicd-task \
+  --region us-east-1
+```
+
+### Option C: AWS EC2
+
+#### 1. Launch EC2 Instance
+1. Go to: https://console.aws.amazon.com/ec2
+2. Click "Launch Instance"
+3. Choose: Ubuntu Server 22.04 LTS
+4. Instance type: t2.micro (free tier)
+5. Create/select key pair (download .pem file)
+6. Configure security group:
+   - Allow SSH (port 22) from your IP
+   - Allow HTTP (port 80) from anywhere
+7. Launch instance
+
+#### 2. Connect and Setup
+```bash
+# SSH into your server
+ssh -i your-key.pem ubuntu@your-ec2-public-ip
+
+# Install Docker
+sudo apt update
+sudo apt install docker.io -y
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker ubuntu
+
+# Logout and login again
+exit
+ssh -i your-key.pem ubuntu@your-ec2-public-ip
+```
+
+#### 3. Deploy Your App
+```bash
+# Pull your Docker image
+docker pull YOUR_DOCKERHUB_USERNAME/cicd-app:latest
+
+# Run it
+docker run -d -p 80:5000 --restart always \
+  --name cicd-app \
+  YOUR_DOCKERHUB_USERNAME/cicd-app:latest
+
+# Your app is live at: http://your-ec2-public-ip
+```
+
+#### 4. Automate with GitHub Actions
+
+Add to GitHub Secrets:
+- `AWS_EC2_HOST` = Your EC2 public IP
+- `AWS_EC2_KEY` = Contents of your .pem file
+- `AWS_EC2_USER` = `ubuntu`
 
 ---
 
@@ -245,7 +356,6 @@ zappa undeploy production
 
 ### Option A: Azure App Service
 
-**Using Azure CLI:**
 ```bash
 # Login
 az login
@@ -299,11 +409,6 @@ az container show \
   --name cicd-container \
   --query ipAddress.fqdn
 ```
-
-### GitHub Actions for Azure
-
-Add to secrets:
-- `AZURE_CREDENTIALS` - Get from: `az ad sp create-for-rbac --name "myApp" --role contributor --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group} --sdk-auth`
 
 ---
 
@@ -384,148 +489,6 @@ environment:
 
 ---
 
-## SSL/HTTPS Configuration
-
-### Free SSL with Let's Encrypt
-
-**On VPS with Docker:**
-```bash
-# Install Certbot
-sudo apt-get update
-sudo apt-get install certbot python3-certbot-nginx
-
-# Get certificate
-sudo certbot --nginx -d yourdomain.com
-
-# Auto-renewal (cron job)
-sudo crontab -e
-# Add: 0 12 * * * /usr/bin/certbot renew --quiet
-```
-
-**On Heroku:**
-```bash
-# Automated SSL on paid dynos
-heroku certs:auto:enable
-```
-
----
-
-## Performance Optimization
-
-### Production Settings
-
-**Gunicorn configuration** (`gunicorn.conf.py`):
-```python
-import multiprocessing
-
-workers = multiprocessing.cpu_count() * 2 + 1
-worker_class = "sync"
-worker_connections = 1000
-timeout = 30
-keepalive = 2
-```
-
-**Run with:**
-```bash
-gunicorn -c gunicorn.conf.py app:app
-```
-
-### Caching with Redis
-
-**Add to requirements.txt:**
-```
-redis==4.5.1
-flask-caching==2.0.2
-```
-
-**Update app.py:**
-```python
-from flask_caching import Cache
-
-cache = Cache(app, config={'CACHE_TYPE': 'redis', 'CACHE_REDIS_URL': 'redis://localhost:6379'})
-
-@app.route('/data')
-@cache.cached(timeout=300)
-def get_data():
-    return expensive_operation()
-```
-
----
-
-## Monitoring & Logging
-
-### Application Monitoring
-
-**Sentry (Error Tracking):**
-```bash
-pip install sentry-sdk[flask]
-```
-
-```python
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
-
-sentry_sdk.init(
-    dsn="your-sentry-dsn",
-    integrations=[FlaskIntegration()]
-)
-```
-
-**New Relic:**
-```bash
-pip install newrelic
-newrelic-admin run-program gunicorn app:app
-```
-
-### Log Aggregation
-
-**Papertrail:**
-```bash
-# On Heroku
-heroku addons:create papertrail
-
-# View logs
-heroku addons:open papertrail
-```
-
-**ELK Stack (Self-hosted):**
-- Elasticsearch
-- Logstash
-- Kibana
-
----
-
-## Cost Comparison
-
-| Platform | Free Tier | Paid Plans |
-|----------|-----------|------------|
-| Heroku | 550 dyno hours/month | From $7/month |
-| AWS EB | 750 hours/month (12 months) | From $15/month |
-| Azure | 60 minutes/day | From $13/month |
-| Google Cloud Run | 2M requests/month | Pay per use |
-| DigitalOcean | No free tier | From $5/month |
-
----
-
-## Deployment Checklist
-
-Before going to production:
-
-- [ ] Environment variables set securely
-- [ ] Debug mode disabled (`FLASK_ENV=production`)
-- [ ] HTTPS enabled
-- [ ] Database backups configured
-- [ ] Monitoring setup (Sentry, New Relic)
-- [ ] Log aggregation configured
-- [ ] Error pages customized (404, 500)
-- [ ] Rate limiting implemented
-- [ ] CORS configured properly
-- [ ] Security headers added
-- [ ] Database migrations tested
-- [ ] Rollback plan documented
-
----
-
 ## Security Best Practices
 
 ### 1. Use Environment Variables
@@ -565,13 +528,100 @@ from flask_cors import CORS
 CORS(app, origins=["https://yourdomain.com"])
 ```
 
+### 5. SSL/HTTPS
+
+**Free SSL with Let's Encrypt (on VPS):**
+```bash
+sudo apt-get install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com
+
+# Auto-renewal (cron job)
+sudo crontab -e
+# Add: 0 12 * * * /usr/bin/certbot renew --quiet
+```
+
+**On Heroku:**
+```bash
+heroku certs:auto:enable  # Automated SSL on paid dynos
+```
+
+---
+
+## Performance Optimization
+
+### Gunicorn Configuration
+
+Create `gunicorn.conf.py`:
+```python
+import multiprocessing
+
+workers = multiprocessing.cpu_count() * 2 + 1
+worker_class = "sync"
+worker_connections = 1000
+timeout = 30
+keepalive = 2
+```
+
+Run with:
+```bash
+gunicorn -c gunicorn.conf.py app:app
+```
+
+### Caching with Redis
+
+Add to `requirements.txt`:
+```
+redis==4.5.1
+flask-caching==2.0.2
+```
+
+Update `app.py`:
+```python
+from flask_caching import Cache
+
+cache = Cache(app, config={'CACHE_TYPE': 'redis', 'CACHE_REDIS_URL': 'redis://localhost:6379'})
+
+@app.route('/data')
+@cache.cached(timeout=300)
+def get_data():
+    return expensive_operation()
+```
+
+---
+
+## Deployment Checklist
+
+Before going to production:
+
+- [ ] Environment variables set securely
+- [ ] Debug mode disabled (`FLASK_ENV=production`)
+- [ ] HTTPS enabled
+- [ ] Database backups configured
+- [ ] Monitoring setup (Sentry, New Relic)
+- [ ] Log aggregation configured
+- [ ] Error pages customized (404, 500)
+- [ ] Rate limiting implemented
+- [ ] CORS configured properly
+- [ ] Security headers added
+- [ ] Rollback plan documented
+
+---
+
+## Cost Comparison
+
+| Platform | Free Tier | Paid Plans |
+|----------|-----------|------------|
+| Heroku | 550 dyno hours/month | From $7/month |
+| AWS EB | 750 hours/month (12 months) | From $15/month |
+| Azure | 60 minutes/day | From $13/month |
+| Google Cloud Run | 2M requests/month | Pay per use |
+| DigitalOcean | No free tier | From $5/month |
+
 ---
 
 ## Troubleshooting Deployments
 
-### Common Issues
-
-**Issue: App crashes on startup**
+### App crashes on startup
 ```bash
 # Check logs
 # Heroku: heroku logs --tail
@@ -584,7 +634,7 @@ CORS(app, origins=["https://yourdomain.com"])
 # - Port binding issues
 ```
 
-**Issue: Slow response times**
+### Slow response times
 ```bash
 # Scale up workers
 heroku ps:scale web=2
@@ -596,7 +646,7 @@ gunicorn -w 4 -b 0.0.0.0:5000 app:app
 # Add database connection pooling
 ```
 
-**Issue: Out of memory**
+### Out of memory
 ```bash
 # Monitor memory usage
 heroku ps
