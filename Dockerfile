@@ -10,9 +10,9 @@ COPY requirements.txt .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY app.py .
-COPY templates/ templates/
+# Copy application code from app/ directory
+COPY app/app.py .
+COPY app/templates/ templates/
 
 # Expose port 5000
 EXPOSE 5000
