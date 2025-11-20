@@ -31,9 +31,9 @@ jobs:
     - name: Lint with flake8
       run: |
         # Stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
         # Exit-zero treats all errors as warnings
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        flake8 app/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       continue-on-error: true
 
   # Job 2: Run Tests
@@ -63,7 +63,7 @@ jobs:
     
     - name: Run tests with pytest
       run: |
-        pytest test_app.py -v --cov=app --cov-report=xml --cov-report=term
+        pytest app/test_app.py -v --cov=app --cov-report=xml --cov-report=term
     
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
