@@ -36,6 +36,12 @@ python3 app.py
 - `ModuleNotFoundError`? → Run `pip install -r requirements.txt`
 - `Port 5000 in use`? → Kill the process: `lsof -i :5000` then `kill -9 <PID>`
 
+> [!TIP]
+> **What if it still doesn't work?**
+> 1. Check if you are in the `app/` folder (`pwd`).
+> 2. Make sure you activated your virtual environment (if you used one).
+> 3. Try restarting your terminal.
+
 ---
 
 ### 2. Test in Browser (5 min)

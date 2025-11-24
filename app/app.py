@@ -6,9 +6,13 @@ This app demonstrates a basic web service with multiple endpoints
 from flask import Flask, jsonify, request, render_template
 from datetime import datetime
 
+# Initialize the Flask application
+# This is like starting the engine of a car
 app = Flask(__name__)
 
 # In-memory storage for demonstration
+# NOTE: In a real app, we would use a database (like PostgreSQL or SQLite)
+# But for learning, a simple list is easier to understand!
 tasks = [
     {"id": 1, "title": "Learn CI/CD", "completed": False},
     {"id": 2, "title": "Build a pipeline", "completed": False}
@@ -17,7 +21,10 @@ tasks = [
 
 @app.route('/')
 def home():
-    """Home endpoint - returns the web UI"""
+    """
+    Home endpoint - returns the web UI.
+    When you visit http://localhost:5000, this function runs.
+    """
     return render_template('index.html')
 
 
@@ -40,7 +47,10 @@ def api_home():
 
 @app.route('/health')
 def health():
-    """Health check endpoint for monitoring"""
+    """
+    Health check endpoint for monitoring.
+    CI/CD pipelines use this to check if the app is alive and working.
+    """
     return jsonify({
         "status": "healthy",
         "timestamp": datetime.now().isoformat()

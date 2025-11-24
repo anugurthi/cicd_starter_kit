@@ -19,6 +19,19 @@ By the end of this workshop, you'll have:
 
 ---
 
+## 📚 Concepts Dictionary (Read this first!)
+
+New to these terms? Here's a cheat sheet:
+
+- **CI (Continuous Integration):** Automatically testing your code every time you save it. It prevents bugs from sneaking in.
+- **CD (Continuous Deployment):** Automatically putting your code on the internet (production) after tests pass.
+- **Flask:** A lightweight Python tool for building websites and APIs.
+- **API (Application Programming Interface):** A way for different software to talk to each other (like a waiter taking orders to the kitchen).
+- **Docker:** A tool that packages your app in a "box" (container) so it runs the same on every computer.
+- **GitHub Actions:** A robot that lives in GitHub and runs your tests/deployments automatically.
+
+---
+
 ## Quick Start (60 seconds)
 
 ```bash
@@ -37,30 +50,32 @@ cd cicd_starter_kit
 
 ---
 
-## Workshop Structure
+## 🗺️ Workshop Roadmap
 
-### ⏱️ Hour 1: Local Development & Testing
-**What:** Build and test a Flask app on your machine  
-**Learn:** Flask basics, testing with pytest, Docker fundamentals  
-**Duration:** 60 minutes (4 × 15-minute steps)
+We've broken this down into two simple hours:
+
+### ⏱️ Hour 1: The Basics (Local)
+**Goal:** Get the app running on your own computer.
+1. Understand the code
+2. Run it locally
+3. Write tests
+4. Package it with Docker
 
 [Start Hour 1 →](hour-1/README.md)
 
----
-
-### ⏱️ Hour 2: CI/CD Pipeline
-**What:** Automate testing and deployment with GitHub Actions  
-**Learn:** CI/CD concepts, GitHub Actions, automated workflows  
-**Duration:** 60 minutes (4 × 15-minute steps)
+### ⏱️ Hour 2: The Automation (Cloud)
+**Goal:** Let GitHub run your tests automatically.
+1. Put code on GitHub
+2. Create a pipeline
+3. Watch it run tests
+4. Fix a broken pipeline
 
 [Start Hour 2 →](hour-2/README.md)
 
----
-
 ### 🎯 After the Workshop
-**What:** Deploy to production, add features, go deeper  
-**Learn:** Cloud deployment, advanced CI/CD, best practices  
-**Duration:** At your own pace
+**Goal:** Go further.
+- Deploy to the real world
+- Add more features
 
 [Next Steps →](NEXT-STEPS.md)
 
