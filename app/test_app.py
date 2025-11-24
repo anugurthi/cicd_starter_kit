@@ -12,12 +12,26 @@ class TestFlaskApp(unittest.TestCase):
     """Test cases for Flask endpoints"""
     
     def setUp(self):
-        """Set up test client before each test"""
+        """
+        Runs BEFORE every test.
+        Sets up a clean version of the app for testing.
+        """
         self.app = app.test_client()
         self.app.testing = True
+
+    def tearDown(self):
+        """
+        Runs AFTER every test.
+        Cleans up anything we created (not needed here, but good to know!)
+        """
+        pass
     
     def test_home_endpoint(self):
-        """Test the home endpoint returns HTML UI"""
+        """
+        Test the home page.
+        1. GET /
+        2. Check if status code is 200 (OK)
+        """
         response = self.app.get('/')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'CI/CD Starter Kit', response.data)
